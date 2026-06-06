@@ -3,47 +3,270 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>مكتب أبراج الوسام للخدمات التجارية</title>
+<title>أبراج الوسام للخدمات العامة</title>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
 <style>
 body{
-font-family:Tahoma,sans-serif;
-background:#f5f5f5;
+font-family:Tahoma;
+background:#f5f7fa;
 margin:0;
-text-align:center;
+padding:0;
 }
+
 header{
 background:#0f2747;
 color:white;
-padding:30px;
+padding:20px;
+text-align:center;
 }
-h1{
-margin:0;
-}
+
 .container{
-padding:30px;
+max-width:1200px;
+margin:auto;
+padding:20px;
 }
+
 .card{
 background:white;
-padding:20px;
-margin:15px;
-border-radius:15px;
+padding:15px;
+margin-bottom:15px;
+border-radius:12px;
 box-shadow:0 2px 10px rgba(0,0,0,.1);
+}
+
+input,select,textarea{
+width:100%;
+padding:10px;
+margin:5px 0;
+border:1px solid #ddd;
+border-radius:8px;
+}
+
+button{
+background:#0f2747;
+color:white;
+border:none;
+padding:12px;
+border-radius:8px;
+cursor:pointer;
+width:100%;
+}
+
+button:hover{
+opacity:.9;
+}
+
+table{
+width:100%;
+border-collapse:collapse;
+background:white;
+}
+
+th,td{
+border:1px solid #ddd;
+padding:10px;
+text-align:center;
+}
+
+th{
+background:#0f2747;
+color:white;
+}
+
+.stats{
+display:grid;
+grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
+gap:10px;
+}
+
+.stat{
+background:white;
+padding:15px;
+border-radius:12px;
+text-align:center;
+font-weight:bold;
+}
+
+.search{
+margin-bottom:15px;
 }
 </style>
 </head>
+
 <body>
 
 <header>
-<h1>مكتب أبراج الوسام للخدمات التجارية</h1>
-<p>نظام إدارة العملاء والإيرادات</p>
+<h1>أبراج الوسام للخدمات العامة</h1>
+<p>نظام العملاء والإيرادات</p>
 </header>
 
 <div class="container">
+
+<div class="stats">
+<div class="stat">إجمالي الإيرادات: <span id="totalIncome">0</span></div>
+<div class="stat">المدفوع: <span id="totalPaid">0</span></div>
+<div class="stat">المتبقي: <span id="totalRemaining">0</span></div>
+</div>
+
 <div class="card">
-<h2>مرحباً بك</h2>
-<p>تم تشغيل الموقع بنجاح.</p>
+<h3>إضافة عميل</h3>
+
+<input id="customer_name" placeholder="اسم العميل">
+
+<input id="phone" placeholder="رقم الجوال">
+
+<input id="service_type" placeholder="نوع الخدمة">
+
+<input id="total_amount" type="number" placeholder="إجمالي المبلغ">
+
+<input id="paid_amount" type="number" placeholder="المدفوع">
+
+<textarea id="notes" placeholder="ملاحظات"></textarea>
+
+<button onclick="saveCustomer()">حفظ العميل</button>
 </div>
+
+<div class="card">
+<input class="search" id="search" placeholder="بحث عن عميل" onkeyup="loadCustomers()">
 </div>
+
+<div class="card">
+<table>
+<thead>
+<tr>
+<th>العميل</th>
+<th>الجوال</th>
+<th>الخدمة</th>
+<th>الإجمالي</th>
+<th>المدفوع</th>
+<th>المتبقي</th>
+<th>ملاحظات</th>
+</tr>
+</thead>
+<tbody id="customersTable"></tbody>
+</table>
+</div>
+
+</div>
+
+<script>
+
+const supabaseUrl =
+"https://furgsvsfrdwuaqlpwupp.supabase.co";
+
+const supabaseKey =
+"ضع_المفتاح_الذي_نسخته_من_Supabase_هنا";
+
+const supabase =
+window.supabase.createClient(
+supabaseUrl,
+supabaseKey
+);
+
+async function saveCustomer(){
+
+let total =
+Number(document.getElementById("total_amount").value);
+
+let paid =
+Number(document.getElementById("paid_amount").value);
+
+let remaining = total - paid;
+
+const {error} =
+await supabase
+.from("customers")
+.insert([{
+customer_name:
+document.getElementById("customer_name").value,
+
+phone:
+document.getElementById("phone").value,
+
+service_type:
+document.getElementById("service_type").value,
+
+total_amount: total,
+
+paid_amount: paid,
+
+remaining_amount: remaining,
+
+notes:
+document.getElementById("notes").value
+}]);
+
+if(error){
+alert(error.message);
+return;
+}
+
+alert("تم الحفظ بنجاح");
+
+loadCustomers();
+}
+
+async function loadCustomers(){
+
+let search =
+document.getElementById("search").value;
+
+let query =
+supabase
+.from("customers")
+.select("*")
+.order("id",{ascending:false});
+
+if(search){
+query =
+query.ilike(
+"customer_name",
+`%${search}%`
+);
+}
+
+const {data,error} =
+await query;
+
+if(error) return;
+
+let html="";
+
+let total=0;
+let paid=0;
+let remain=0;
+
+data.forEach(row=>{
+
+total += Number(row.total_amount);
+paid += Number(row.paid_amount);
+remain += Number(row.remaining_amount);
+
+html += `
+<tr>
+<td>${row.customer_name}</td>
+<td>${row.phone}</td>
+<td>${row.service_type}</td>
+<td>${row.total_amount}</td>
+<td>${row.paid_amount}</td>
+<td>${row.remaining_amount}</td>
+<td>${row.notes || ""}</td>
+</tr>
+`;
+});
+
+document.getElementById("customersTable").innerHTML = html;
+
+document.getElementById("totalIncome").innerText = total;
+document.getElementById("totalPaid").innerText = paid;
+document.getElementById("totalRemaining").innerText = remain;
+}
+
+loadCustomers();
+
+</script>
 
 </body>
 </html>
