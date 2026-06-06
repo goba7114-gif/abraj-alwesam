@@ -127,8 +127,7 @@ margin-bottom:15px;
 
 <button onclick="saveCustomer()">حفظ العميل</button>
 </div>
-
-<div class="card">
+  <div class="card">
 <input class="search" id="search" placeholder="بحث عن عميل" onkeyup="loadCustomers()">
 </div>
 
@@ -166,7 +165,7 @@ supabaseKey
 );
 
 async function saveCustomer(){
-
+alert("تم الضغط على زر الحفظ");
 let total =
 Number(document.getElementById("total_amount").value);
 
